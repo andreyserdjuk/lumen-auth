@@ -19,6 +19,8 @@ class Authenticator
 
     public function authenticate(string $email, string $password, int $ttl): array
     {
+        $expireTime = time() + $ttl;
+
         /** @var Account $account */
         $account = $this->om
             ->getRepository(Account::class)
@@ -30,7 +32,6 @@ class Authenticator
             throw new \InvalidArgumentException('User not found.');
         }
 
-        $expireTime = time() + $ttl;
         $signature = password_hash($email . $account->getPassword() . $expireTime, PASSWORD_ARGON2ID);
 
         return [

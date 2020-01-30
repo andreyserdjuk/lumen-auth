@@ -2,9 +2,9 @@
 
 #### Requirements (non-docker start):
 `php: ^7.3`, `mongodb` pecl extension, `composer`
-##### Run tests:
+##### Run tests (see below how to run docker-compose):
 ```bash
-./vendor/bin/phpunit
+docker-compose exec php php -dopcache.enable=0 ./vendor/bin/phpunit --do-not-cache-result
 ```
 
 ### Local setup (using docker):
