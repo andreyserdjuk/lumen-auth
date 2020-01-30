@@ -55,6 +55,7 @@ class SendMailSpool extends Command
                 if ($swiftMailer->send($message)) {
                     $this->om->remove($mail);
                     $this->om->flush();
+                    $this->info(sprintf('Sent to recipient "%s" from spool.', $mail->getTo()));
                 } else {
                     $this->warn(sprintf(
                         'Could not send Mail - id:"%s", mail:"%s"',

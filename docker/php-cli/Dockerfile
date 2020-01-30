@@ -9,3 +9,7 @@ RUN apk --update add --virtual build-dependencies build-base openssl-dev autocon
 # Time Zone
 RUN echo "date.timezone=${PHP_TIMEZONE:-UTC}" > $PHP_INI_DIR/conf.d/date_timezone.ini
 
+RUN apk update \
+  && apk upgrade \
+  && apk add bash \
+  && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer

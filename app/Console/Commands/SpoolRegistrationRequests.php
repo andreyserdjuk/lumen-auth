@@ -62,6 +62,8 @@ class SpoolRegistrationRequests extends Command
                     ->setCreatedAt(new \DateTime());
                 $this->om->persist($mail);
                 $this->om->flush();
+
+                $this->info(sprintf('Added recipient "%s" to spool.', $registration->getEmail()));
             }
         } while ($registration);
     }

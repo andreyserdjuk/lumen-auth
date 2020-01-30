@@ -1,27 +1,27 @@
-# Run Lumen Auth API
+## Lumen Auth API
 
-#### For dev env:
-
+#### Requirements (non-docker start):
+`php: ^7.3`, `mongodb` pecl extension, `composer`
 ##### Run tests:
 ```bash
 ./vendor/bin/phpunit
 ```
-##### Create environment file .env: 
-```bash
-cp ./.env.example ./.env
-``` 
 
-##### Run docker containers: 
-- Mongo (database), 
-- Mailhog (mail catcher available on http://localhost:8025/)
+### Local setup (using docker):
+Next steps suggest current `./docker` directory.
+##### Run build docker-compose to build application:
 ```bash
 cd docker
-docker-composer up -d
+docker-compose -f docker-compose.build.yml up
 ``` 
-- Run local PHP server 
+ 
+##### Run docker-compose to run start application with dependencies: 
+- Mongo (database), 
+- Mailhog (mail catcher available on http://localhost:8025/)
+- PHP dev server
 ```bash
-php -S 127.0.0.1:8000 -t public
-```
+docker-compose up -d
+``` 
 
 #### Register - creates RegistrationRequest
 user1, user2, user3
@@ -33,16 +33,16 @@ curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'email=user
 
 #### Fill mail queue and RegistrationPending 
 ```bash
-php artisan mail-queue:spool
+docker-compose exec php php artisan mail-queue:spool
 ```
 
 #### Send mail queue 
 ```bash
-php artisan mail-queue:send
+docker-compose exec php php artisan mail-queue:send
 ```
 
 #### Activate account 
-Open email and navigate by activation link, response should be:
+Open email (navigate to mailhog http://localhost:8025/) and navigate by activation link, response should be:
 ```json
 {"messages":["Activated."]}
 ```
@@ -59,4 +59,10 @@ should return token like this:
 
 #### Verify token
 Simply navigate to `http://localhost:8000/verify/%already_generated_token%`  
-Should return: `{"messages":["Token is valid."]}`
+Should return: `{"messages":["Token is valid."]}`  
+P.S. Token should be url-encoded: `encodeURIComponent(%token%)` for JS.
+
+#### Purge add database
+```bash
+docker-compose exec php php artisan auth:purge
+```
