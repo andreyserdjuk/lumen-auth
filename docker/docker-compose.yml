@@ -28,3 +28,14 @@ services:
     ports:
     - 1025:1025
     - 8025:8025
+
+#  php:
+#    build: ./php-cli
+#    restart: always
+#    ports:
+#      - 8000:8000
+#    volumes:
+#      - ../:/code
+#    working_dir: /code
+#    command: 'php -S 0.0.0.0:8000 -t public'
+
