@@ -49,4 +49,4 @@ should return token like this:
 
 #### Verify token
 Simply navigate to `http://localhost:8000/verify/%already_generated_token%`  
-Should return: `{"messages":["Token is invalid."]}`
+Should return: `{"messages":["Token is valid."]}`
