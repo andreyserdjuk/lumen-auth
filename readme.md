@@ -2,6 +2,7 @@
 
 #### Requirements (non-docker start):
 `php: ^7.3`, `mongodb` pecl extension, `composer`
+
 ##### Run tests (see below how to run docker-compose):
 ```bash
 docker-compose exec php php -dopcache.enable=0 ./vendor/bin/phpunit --do-not-cache-result
@@ -62,8 +63,7 @@ Simply navigate to `http://localhost:8000/verify/%already_generated_token%`
 Should return: `{"messages":["Token is valid."]}`  
 P.S. Token should be url-encoded: `encodeURIComponent(%token%)` for JS.
 
-#### Purge add database
+#### Purge all database
 ```bash
 docker-compose exec php php artisan auth:purge
 ```
-
