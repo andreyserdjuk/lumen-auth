@@ -1,6 +1,16 @@
 # Run Lumen Auth API
 
 #### For dev env:
+
+##### Run tests:
+```bash
+./vendor/bin/phpunit
+```
+##### Create environment file .env: 
+```bash
+cp ./.env.example ./.env
+``` 
+
 ##### Run docker containers: 
 - Mongo (database), 
 - Mailhog (mail catcher available on http://localhost:8025/)
