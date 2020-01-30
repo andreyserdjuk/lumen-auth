@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\CommandsServiceProvider;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\ODM\MongoDB\Configuration;
 use Doctrine\ODM\MongoDB\DocumentManager;
@@ -81,6 +82,8 @@ $app->configure('mail');
 $app->alias('mailer', Illuminate\Mail\Mailer::class);
 $app->alias('mailer', Illuminate\Contracts\Mail\Mailer::class);
 $app->alias('mailer', Illuminate\Contracts\Mail\MailQueue::class);
+
+$app->register(CommandsServiceProvider::class);
 
 $app->withFacades();
 
