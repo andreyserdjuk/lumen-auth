@@ -66,3 +66,7 @@ P.S. Token should be url-encoded: `encodeURIComponent(%token%)` for JS.
 ```bash
 docker-compose exec php php artisan auth:purge
 ```
+
+## TODO:
+- Add Doctrine ODM to console.
+- Run `odm:schema:create`
