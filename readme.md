@@ -16,9 +16,9 @@ php -S 127.0.0.1:8000 -t public
 #### Register - creates RegistrationRequest
 user1, user2, user3
 ```bash
-▶ curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'email=user1@localhost&password=123' http://127.0.0.1:8000/auth
-▶ curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'email=user2@localhost&password=123' http://127.0.0.1:8000/auth
-▶ curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'email=user3@localhost&password=123' http://127.0.0.1:8000/auth
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'email=user1@localhost&password=123' http://127.0.0.1:8000/auth
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'email=user2@localhost&password=123' http://127.0.0.1:8000/auth
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'email=user3@localhost&password=123' http://127.0.0.1:8000/auth
 ```
 
 #### Fill mail queue and RegistrationPending 
