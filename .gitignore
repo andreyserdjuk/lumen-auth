@@ -5,3 +5,4 @@ Homestead.yaml
 .env
 /storage/DoctrineODM
 /.phpunit.result.cache
+/docker/mongo/data
