@@ -3,6 +3,7 @@
 use Doctrine\Persistence\ObjectManager;
 use Doctrine\Persistence\ObjectRepository;
 use LumenAuth\Core\Authenticator;
+use LumenAuth\Core\Base64;
 use LumenAuth\Documents\Account;
 use PHPUnit\Framework\TestCase;
 
@@ -14,23 +15,33 @@ class AuthenticatorTest extends TestCase
      * @param $password
      * @param $passwordHash
      * @param $email
+     * @param $key
      * @param $ttl
+     * @param $isNotExpired
      */
     public function testAuth(
         $password,
         $passwordHash,
         $email,
+        $key,
         $ttl,
-        $isExpired
+        $isNotExpired
     )
     {
         $authenticator = $this->makeAuthenticator($passwordHash);
         $time = time();
-        $token = $authenticator->authenticate($email, $password, $ttl);
-        $signature = $token['signature'];
-        $signatureSrc = $email . $passwordHash . ($time + $ttl);
+        $token = $authenticator->authenticate($email, $password, $key, $ttl);
+        $parts = explode('~', $token);
+        [$payload64, $signature64] = $parts;
+        $signature = Base64::decode($signature64);
+        $signatureControl = hash_hmac(
+            'sha256',
+            $payload64,
+            $key,
+            true
+        );
 
-        $this->assertTrue(password_verify($signatureSrc, $signature));
+        $this->assertEquals($signatureControl, $signature);
     }
 
     /**
@@ -39,32 +50,40 @@ class AuthenticatorTest extends TestCase
      * @param $password
      * @param $passwordHash
      * @param $email
+     * @param $key
      * @param $ttl
-     * @param $isExpired
+     * @param $isNotExpired
      */
     public function testVerify(
         $password,
         $passwordHash,
         $email,
+        $key,
         $ttl,
-        $isExpired
+        $isNotExpired
     )
     {
-        if (!$isExpired) {
-            $this->expectException(\InvalidArgumentException::class);
+        if (!$isNotExpired) {
+            $this->expectException(UnexpectedValueException::class);
+            $this->expectExceptionMessage('Token was expired.');
+        } else {
+            $this->assertTrue(true);
         }
 
-        $authenticator = $this->makeAuthenticator($passwordHash);
         $expireTime = time() + $ttl;
-        $signature = password_hash($email . $passwordHash . $expireTime, PASSWORD_ARGON2ID);
-
-        $token = json_encode([
-            'signature' => $signature,
-            'expires'   => $expireTime,
-            'email'     => $email,
-        ]);
-
-        $this->assertEquals($isExpired, $authenticator->verify($token));
+        $payload = Base64::encode(json_encode([
+            'email' => $email,
+            'exp'   => $expireTime,
+        ]));
+        $signature = Base64::encode(hash_hmac(
+            'sha256',
+            $payload,
+            $key,
+            true
+        ));
+        $token = $payload . '~' . $signature;
+        $authenticator = $this->makeAuthenticator($passwordHash);
+        $authenticator->getPayloadFromToken($token, $key);
     }
 
     /**
@@ -73,28 +92,29 @@ class AuthenticatorTest extends TestCase
      * @param $password
      * @param $passwordHash
      * @param $email
+     * @param $key
      * @param $ttl
-     * @param $isExpired
+     * @param $isNotExpired
      */
     public function testEnd2End(
         $password,
         $passwordHash,
         $email,
+        $key,
         $ttl,
-        $isExpired
+        $isNotExpired
     )
     {
-        if (!$isExpired) {
-            $this->expectException(\InvalidArgumentException::class);
+        if (!$isNotExpired) {
+            $this->expectException(UnexpectedValueException::class);
+            $this->expectExceptionMessage('Token was expired.');
+        } else {
+            $this->assertTrue(true);
         }
 
         $authenticator = $this->makeAuthenticator($passwordHash);
-        $token = $authenticator->authenticate($email, $password, $ttl);
-        $this->assertEquals(
-            $isExpired,
-            $authenticator->verify(json_encode($token)),
-            'Cannot verify own token.'
-        );
+        $token = $authenticator->authenticate($email, $password, $key, $ttl);
+        $authenticator->getPayloadFromToken($token, $key);
     }
 
     public function authDataProvider()
@@ -104,6 +124,7 @@ class AuthenticatorTest extends TestCase
                 '123',                                                      // password
                 password_hash('123', PASSWORD_ARGON2ID),     // password hash
                 'x123@x.com',                                               // email
+                'secret',                                                   // key for hash_hmac
                 10,                                                         // ttl
                 true,                                                       // not expired
             ],
@@ -111,6 +132,7 @@ class AuthenticatorTest extends TestCase
                 '123password3112039',
                 password_hash('123password3112039', PASSWORD_ARGON2ID),
                 'mail@localhost',
+                'secret',                                                   // key for hash_hmac
                 3600,
                 true,                                                       // not expired
             ],
@@ -118,6 +140,7 @@ class AuthenticatorTest extends TestCase
                 '123password3112039',
                 password_hash('123password3112039', PASSWORD_ARGON2ID),
                 'mail@localhost',
+                'secret',                                                   // key for hash_hmac
                 -1,
                 false,                                                       // expired
             ],

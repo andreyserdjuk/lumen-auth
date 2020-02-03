@@ -31,9 +31,10 @@ class AuthenticationController extends Controller
         $email = $request->input('email');
         $password = $request->input('password');
         $ttl = env('APP_SESSION_TTL');
+        $key = env('SES_SECRET');
 
         try {
-            $token = $this->authenticator->authenticate($email, $password, $ttl);
+            $token = $this->authenticator->authenticate($email, $password, $key, $ttl);
         } catch (Exception $e) {
             return new JsonResponse(['messages' => [$e->getMessage()]], 422);
         }
@@ -43,15 +44,13 @@ class AuthenticationController extends Controller
 
     public function verify(string $token)
     {
+        $key = env('SES_SECRET');
         try {
-            $isValid = $this->authenticator->verify(urldecode($token));
+            $this->authenticator->getPayloadFromToken(urldecode($token), $key);
         } catch (Exception $e) {
-            return new JsonResponse(['messages' => [$e->getMessage()]], 422);
+            return new JsonResponse(['messages' => [$e->getMessage()]], 401);
         }
 
-        $statusCode = $isValid ? 200 : 401;
-        $messages = $isValid ? ['messages' => ['Token is valid.']] : ['messages' => ['Token is invalid.']];
-
-        return new JsonResponse($messages, $statusCode);
+        return new JsonResponse(['messages' => ['Token is valid.']], 200);
     }
 }

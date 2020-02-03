@@ -3,7 +3,9 @@
 namespace LumenAuth\Core;
 
 use Doctrine\Persistence\ObjectManager;
+use InvalidArgumentException;
 use LumenAuth\Documents\Account;
+use UnexpectedValueException;
 
 class Authenticator
 {
@@ -17,7 +19,7 @@ class Authenticator
         $this->om = $om;
     }
 
-    public function authenticate(string $email, string $password, int $ttl): array
+    public function authenticate(string $email, string $password, string $key, int $ttl): string
     {
         $expireTime = time() + $ttl;
 
@@ -29,47 +31,52 @@ class Authenticator
             ]);
 
         if (!$account || !password_verify($password, $account->getPassword())) {
-            throw new \InvalidArgumentException('User not found.');
+            throw new InvalidArgumentException('User not found.');
         }
 
-        $signature = password_hash($email . $account->getPassword() . $expireTime, PASSWORD_ARGON2ID);
+        $payload = Base64::encode(json_encode([
+            'email' => $email,
+            'exp'   => $expireTime,
+        ]));
+        $signature = Base64::encode(hash_hmac(
+            'sha256',
+            $payload,
+            $key,
+            true
+        ));
 
-        return [
-            'signature' => $signature,
-            'expires'   => $expireTime,
-            'email'     => $email,
-        ];
+        return $payload . '~' . $signature;
     }
 
-    public function verify(string $token): bool
+    public function getPayloadFromToken(string $token, string $key): array
     {
-        $parts = json_decode($token, true);
-        $signature = $parts['signature'] ?? null;
-        $expireTime = isset($parts['expires']) ? intval($parts['expires']) : null;
-        $email = $parts['email'] ?? null;
         $time = time();
-        if ($time > $expireTime) {
-            throw new \InvalidArgumentException('Token was expired.');
+        $parts = explode('~', $token);
+        if (count($parts) !== 2) {
+            throw new UnexpectedValueException('Malformed payload.');
+        }
+        [$payload64, $signature64] = $parts;
+        $signature = Base64::decode($signature64);
+        $signatureControl = hash_hmac(
+            'sha256',
+            $payload64,
+            $key,
+            true
+        );
+
+        if (!hash_equals($signatureControl, $signature)) {
+            throw new UnexpectedValueException('Signature verification failed');
         }
 
-        if ($email && $expireTime && $signature) {
-            /** @var Account $account */
-            $account = $this->om
-                ->getRepository(Account::class)
-                ->findOneBy([
-                    'email' => $email,
-                ]);
-
-            if ($account) {
-                $password = $account->getPassword();
-                $signatureSrc = $email . $password . $expireTime;
-
-                return password_verify($signatureSrc, $signature);
-            }
-        } else {
-            throw new \InvalidArgumentException('Malformed auth token.');
+        $payload = json_decode(Base64::decode($payload64), true);
+        if (!$payload || !isset($payload['exp'])) {
+            throw new UnexpectedValueException('Malformed payload.');
         }
 
-        return false;
+        if ($payload['exp'] < $time) {
+            throw new UnexpectedValueException('Token was expired.');
+        }
+
+        return $payload;
     }
 }
